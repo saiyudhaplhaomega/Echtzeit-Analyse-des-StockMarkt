@@ -102,7 +102,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__CORE__FERNET_KEY= lY1Z6YPZQUj60de4F1aJr3OrcXu56IGvprXx9bW0SeY=
+      - AIRFLOW__CORE__FERNET_KEY= ${AIRFLOW__CORE__FERNET_KEY}
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
     volumes:
       - ./dags:/opt/airflow/dags
