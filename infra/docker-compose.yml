@@ -1,4 +1,4 @@
-version: "3.8"
+#version: "3.8"
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.1
@@ -51,39 +51,6 @@ services:
       MINIO_ROOT_PASSWORD: password123
     command: server /data --console-address ":9001"
 
-  airflow-webserver:
-    image: apache/airflow:2.9.3
-    container_name: airflow-webserver
-    restart: always
-    depends_on:
-      - airflow-scheduler
-      - postgres
-    environment:
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-    ports:
-      - "8080:8080"
-    command: webserver
-
-  airflow-scheduler:
-    image: apache/airflow:2.9.3
-    container_name: airflow-scheduler
-    restart: always
-    depends_on:
-      - postgres
-    environment:
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-    command: scheduler
-
   postgres:
     image: postgres:15
     container_name: airflow-postgres
@@ -96,8 +63,56 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1g
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    container_name: airflow-scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=DcI7fzPdnpRsm9nTe5dK93CutxFqasacltDsD13HBCg=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL=30
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    command: scheduler
+    mem_limit: 2g
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    container_name: airflow-webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-scheduler:
+        condition: service_started
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY= lY1Z6YPZQUj60de4F1aJr3OrcXu56IGvprXx9bW0SeY=
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    command: webserver
+    mem_limit: 2g
 
 volumes:
   postgres_data:
-
 

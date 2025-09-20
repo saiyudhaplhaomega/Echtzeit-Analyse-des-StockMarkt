@@ -3,9 +3,17 @@ import time
 import json
 import requests
 from kafka import KafkaProducer
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+# build the path to .env (one level up from producer/)
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
 
 #Define variables for API
-API_KEY="<<YOUR API KEY>>"
+API_KEY=os.getenv("finnhub_API_KEY")
 BASE_URL = "https://finnhub.io/api/v1/quote"
 SYMBOLS = ["AAPL", "MSFT", "TSLA", "GOOGL", "AMZN"]
 

@@ -1,0 +1,93 @@
+CREATE VIEW VW_BedOccupancy_Percentage AS
+SELECT 
+    P.gender,
+    (COUNT(CASE WHEN F.is_currently_admitted = 1 THEN F.bed_ID END) * 1.0) 
+        / COUNT(F.bed_ID) AS OccupancyPercent
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+GROUP BY P.gender;
+
+CREATE VIEW VW_TotalBed_Turnover AS
+SELECT
+    P.gender,
+    (COUNT(DISTINCT F.fact_ID) * 1.0) / COUNT(DISTINCT F.bed_ID) AS BedTurnoverRate
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+GROUP BY P.gender;
+
+CREATE VIEW VW_Patient_Demographics AS
+SELECT
+    P.gender,
+    COUNT(DISTINCT CASE WHEN F.is_currently_admitted = 1 THEN F.fact_ID END) AS TotalPatients
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+GROUP BY P.gender;
+
+
+CREATE VIEW VW_AvgTreatment_Duration AS
+SELECT
+    D.department,
+    P.gender,
+    AVG(F.length_of_stay_hours) AS AvgTreatmentDuration
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_department AS D
+    ON F.department_SK = D.surrogate_key
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+GROUP BY D.department, P.gender;
+
+
+CREATE VIEW VW_Patient_Volume_Trend AS
+SELECT
+    F.admission_date,
+    P.gender,
+    COUNT(DISTINCT F.fact_ID) AS TotalPatientCount
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+GROUP BY F.admission_date, P.gender;
+
+CREATE VIEW VW_Department_Inflow AS
+SELECT
+    D.department,
+    P.gender,
+    COUNT(CASE WHEN F.is_currently_admitted=1 THEN F.fact_id END) AS PatientCount
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_department AS D
+    ON F.department_SK = D.surrogate_key
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+GROUP BY D.department, P.gender;
+
+CREATE VIEW VW_Overstay_Patients AS
+SELECT
+    D.department,
+    P.gender,
+    COUNT(F.fact_ID) AS OverstayCount
+FROM dbo.fact_patient_flow AS F
+JOIN dbo.dimension_department AS D
+    ON F.department_SK = D.surrogate_key
+JOIN dbo.dimension_patient AS P
+    ON F.patient_SK = P.surrogate_key
+WHERE F.length_of_stay_hours > 50
+GROUP BY D.department, P.gender;
+
+################### Testing the views ###################
+SELECT * FROM VW_BedOccupancy_Percentage;
+SELECT * FROM VW_TotalBed_Turnover; 
+SELECT * FROM VW_Patient_Demographics;
+SELECT * FROM VW_AvgTreatment_Duration; 
+SELECT * FROM VW_Patient_Volume_Trend;
+SELECT * FROM VW_Department_Inflow;
+SELECT * FROM VW_Overstay_Patients;
+-- DROP VIEW IF EXISTS VW_BedOccupancy_Percentage;
+-- DROP VIEW IF EXISTS VW_TotalBed_Turnover;        
+-- DROP VIEW IF EXISTS VW_Patient_Demographics;
+-- DROP VIEW IF EXISTS VW_AvgTreatment_Duration;
+-- DROP VIEW IF EXISTS VW_Patient_Volume_Trend;
+-- DROP VIEW IF EXISTS VW_Department_Inflow;    
+-- DROP VIEW IF EXISTS VW_Overstay_Patients;    
+

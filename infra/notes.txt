@@ -1,0 +1,27 @@
+1) Problem with airflow-webserver and airflow-scheduler
+
+Generate a new Fernet key:
+docker run --rm python:3.9 bash -c "pip install --user cryptography && python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+
+Copy the output key (e.g., abc123...=).
+Edit docker-compose.yml: Replace both AIRFLOW__CORE__FERNET_KEY values with the new key.
+Run:
+docker compose down
+
+Run:
+docker compose up -d postgres
+
+Wait 10s, check:
+docker ps -a --filter "name=airflow-postgres"
+
+Run:
+docker compose run --rm airflow-scheduler airflow db init
+
+Run:
+docker compose run --rm airflow-webserver airflow db migrate
+
+Run:
+docker compose up -d
+
+Check: docker ps -a, access http://localhost:8080.
+
