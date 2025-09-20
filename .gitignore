@@ -1,4 +1,3 @@
-infra\.env
+**/.env
 venv/
 __pycache__/
-.env
